@@ -6,8 +6,9 @@ import { FilterPanel } from '../components/FilterPanel';
 import { MaterialCard } from '../components/MaterialCard';
 import { MaterialModal, BorrowModal, ProjectMaterialModal } from '../components/Modals';
 import { materialService } from '../services/materialService';
+import { borrowService } from '../services/borrowService';
 import { useMaterialStore, useBorrowStore, useProjectStore } from '../store';
-import type { Material, MaterialStatus, BorrowRecord } from '../types';
+import type { Material, MaterialStatus, BorrowRecord, BorrowTimelineEvent } from '../types';
 import { Package, Search } from 'lucide-react';
 
 export function MaterialsPage() {
@@ -21,6 +22,7 @@ export function MaterialsPage() {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [timelineEvents, setTimelineEvents] = useState<BorrowTimelineEvent[]>([]);
 
   useEffect(() => {
     loadData();
@@ -34,16 +36,18 @@ export function MaterialsPage() {
     setLoading(true);
     try {
       await materialService.checkAndUpdateOverdue();
-      const [materialsData, suppliersData, projectsData, borrowRecords] = await Promise.all([
+      const [materialsData, suppliersData, projectsData, borrowRecords, timelineEventsData] = await Promise.all([
         materialService.getAll(),
         materialService.getAllSuppliers(),
         import('../services/projectService').then(m => m.projectService.getAll()),
-        import('../services/borrowService').then(m => m.borrowService.getAll()),
+        borrowService.getAll(),
+        borrowService.getAllTimelineEvents(),
       ]);
       setMaterials(materialsData);
       setSuppliers(suppliersData);
       setProjects(projectsData);
       setBorrowRecords(borrowRecords);
+      setTimelineEvents(timelineEventsData);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -85,7 +89,7 @@ export function MaterialsPage() {
   const currentBorrowMap = useMemo(() => {
     const map = new Map<string, BorrowRecord>();
     const activeRecords = borrowRecords.filter(
-      (r) => r.status === 'borrowed' || r.status === 'overdue',
+      (r) => r.status === 'borrowed' || r.status === 'overdue' || r.status === 'reserved',
     );
     for (const record of activeRecords) {
       const existing = map.get(record.materialId);
@@ -95,6 +99,16 @@ export function MaterialsPage() {
     }
     return map;
   }, [borrowRecords]);
+
+  const timelineMap = useMemo(() => {
+    const map = new Map<string, BorrowTimelineEvent[]>();
+    for (const event of timelineEvents) {
+      const list = map.get(event.materialId) || [];
+      list.push(event);
+      map.set(event.materialId, list);
+    }
+    return map;
+  }, [timelineEvents]);
 
   const materialTypes = materialService.getMaterialTypes();
   const cabinetLocations = materialService.getCabinetLocations();
@@ -164,6 +178,7 @@ export function MaterialsPage() {
                 key={material.id}
                 material={material}
                 currentBorrow={currentBorrowMap.get(material.id)}
+                timelineEvents={timelineMap.get(material.id)}
                 onBorrow={handleBorrowClick}
                 onProject={handleProjectClick}
               />

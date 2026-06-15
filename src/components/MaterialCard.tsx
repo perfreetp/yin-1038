@@ -38,10 +38,14 @@ export function MaterialCard({ material, className, currentBorrow, timelineEvent
   };
 
   const isOverdue = currentBorrow?.status === 'overdue';
+  const isReserved = currentBorrow?.status === 'reserved';
   const isBorrowed = currentBorrow?.status === 'borrowed' || isOverdue;
+  const isActive = isBorrowed || isReserved;
 
   const borderClass = isOverdue
     ? 'border-red-500/60 hover:border-red-500 hover:shadow-red-500/10'
+    : isReserved
+    ? 'border-purple-500/60 hover:border-purple-500 hover:shadow-purple-500/10'
     : isBorrowed
     ? 'border-blue-500/60 hover:border-blue-500 hover:shadow-blue-500/10'
     : 'border-slate-700 hover:border-blue-500/50 hover:shadow-blue-500/10';
@@ -61,17 +65,25 @@ export function MaterialCard({ material, className, currentBorrow, timelineEvent
             'px-3 py-1.5 flex items-center justify-between text-xs border-b',
             isOverdue
               ? 'bg-red-500/10 border-red-500/30'
+              : isReserved
+              ? 'bg-purple-500/10 border-purple-500/30'
               : 'bg-blue-500/10 border-blue-500/30',
           )}
         >
           <div className="flex items-center gap-1.5">
             {isOverdue ? (
               <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+            ) : isReserved ? (
+              <CalendarClock className="w-3.5 h-3.5 text-purple-400" />
             ) : (
               <CalendarClock className="w-3.5 h-3.5 text-blue-400" />
             )}
-            <span className={isOverdue ? 'text-red-400 font-medium' : 'text-blue-400 font-medium'}>
-              {isOverdue ? '已逾期' : '借出中'}
+            <span className={isOverdue
+              ? 'text-red-400 font-medium'
+              : isReserved
+              ? 'text-purple-400 font-medium'
+              : 'text-blue-400 font-medium'}>
+              {isOverdue ? '已逾期' : isReserved ? '已预约' : '借出中'}
             </span>
           </div>
           <div className="flex items-center gap-3 text-slate-400">
@@ -81,7 +93,9 @@ export function MaterialCard({ material, className, currentBorrow, timelineEvent
             </span>
             <span className="flex items-center gap-1">
               <CalendarClock className="w-3 h-3" />
-              {formatDate(currentBorrow.expectedReturnDate)}
+              {isReserved && currentBorrow.reservationExpiryDate
+                ? formatDate(currentBorrow.reservationExpiryDate)
+                : formatDate(currentBorrow.expectedReturnDate)}
             </span>
           </div>
         </div>
@@ -125,7 +139,7 @@ export function MaterialCard({ material, className, currentBorrow, timelineEvent
             </span>
             <span className="text-xs text-slate-500">库存: {material.stockQuantity}</span>
           </div>
-          {!currentBorrow && latestEvent && (
+          {latestEvent && (
             <div className="mt-2 pt-2 border-t border-slate-700">
               <div className="flex items-center gap-1.5 text-xs text-slate-400">
                 <History className="w-3.5 h-3.5 text-slate-500" />

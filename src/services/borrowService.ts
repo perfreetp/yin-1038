@@ -260,6 +260,13 @@ export const borrowService = {
       .sortBy('timestamp');
   },
 
+  async getAllTimelineEvents(): Promise<BorrowTimelineEvent[]> {
+    return db.borrowTimelineEvents
+      .toCollection()
+      .reverse()
+      .sortBy('timestamp');
+  },
+
   async checkAndUpdateOverdue(): Promise<void> {
     const now = new Date();
 

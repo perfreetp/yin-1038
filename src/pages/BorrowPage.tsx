@@ -11,7 +11,7 @@ import { useBorrowStore, useMaterialStore } from '../store';
 import type { BorrowRecordWithMaterial, Material } from '../types';
 import { formatDate } from '../utils/format';
 import { getDaysRemaining, getDaysOverdue } from '../utils/format';
-import { ClipboardList, ArrowRightLeft, Package, Search, CheckSquare, Square, Download, FileText, CalendarClock, XCircle, CheckCircle } from 'lucide-react';
+import { ClipboardList, ArrowRightLeft, Package, Search, CheckSquare, Square, Download, CalendarClock, XCircle, CheckCircle, Plus } from 'lucide-react';
 
 type TabType = 'borrowed' | 'returned' | 'overdue' | 'reserved';
 
@@ -141,7 +141,7 @@ export function BorrowPage() {
 
   useEffect(() => {
     setSelectedIds(filteredRecords.map((r) => r.id));
-  }, [filteredRecords.length]);
+  }, [filteredRecords]);
 
   const allSelected = filteredRecords.length > 0 && selectedIds.length === filteredRecords.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < filteredRecords.length;
