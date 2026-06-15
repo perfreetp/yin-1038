@@ -1,8 +1,8 @@
-import { Eye, ArrowRightLeft, FolderKanban, User, CalendarClock, AlertTriangle } from 'lucide-react';
+import { Eye, ArrowRightLeft, FolderKanban, User, CalendarClock, AlertTriangle, History } from 'lucide-react';
 import { cn } from '../lib/utils';
-import type { Material, BorrowRecord } from '../types';
+import type { Material, BorrowRecord, BorrowTimelineEvent } from '../types';
 import { StatusBadge } from './StatusBadge';
-import { formatPrice, formatDate } from '../utils/format';
+import { formatPrice, formatDate, borrowActionTypeLabels } from '../utils/format';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../store/useUIStore';
 
@@ -10,13 +10,28 @@ interface MaterialCardProps {
   material: Material;
   className?: string;
   currentBorrow?: BorrowRecord | null;
+  timelineEvents?: BorrowTimelineEvent[];
   onBorrow?: (material: Material) => void;
   onProject?: (material: Material) => void;
 }
 
-export function MaterialCard({ material, className, currentBorrow, onBorrow, onProject }: MaterialCardProps) {
+const getRelativeTime = (date: Date): string => {
+  const now = new Date();
+  const diff = now.getTime() - new Date(date).getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return '今天';
+  if (days === 1) return '昨天';
+  if (days < 7) return `${days}天前`;
+  if (days < 30) return `${Math.floor(days / 7)}周前`;
+  if (days < 365) return `${Math.floor(days / 30)}个月前`;
+  return `${Math.floor(days / 365)}年前`;
+};
+
+export function MaterialCard({ material, className, currentBorrow, timelineEvents, onBorrow, onProject }: MaterialCardProps) {
   const navigate = useNavigate();
   const { openModal } = useUIStore();
+
+  const latestEvent = timelineEvents && timelineEvents.length > 0 ? timelineEvents[0] : null;
 
   const handleViewDetail = () => {
     navigate(`/materials/${material.id}`);
@@ -110,6 +125,17 @@ export function MaterialCard({ material, className, currentBorrow, onBorrow, onP
             </span>
             <span className="text-xs text-slate-500">库存: {material.stockQuantity}</span>
           </div>
+          {!currentBorrow && latestEvent && (
+            <div className="mt-2 pt-2 border-t border-slate-700">
+              <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                <History className="w-3.5 h-3.5 text-slate-500" />
+                <span>
+                  {getRelativeTime(latestEvent.timestamp)}由{latestEvent.actor}
+                  {borrowActionTypeLabels[latestEvent.actionType]}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="flex border-t border-slate-700" onClick={(e) => e.stopPropagation()}>

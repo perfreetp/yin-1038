@@ -7,9 +7,11 @@ import type {
   FilterOptions,
   MaterialWithDetails,
   BorrowRecord,
+  BorrowTimelineEvent,
 } from '../types';
 import { generateId } from '../utils/file';
 import { isOverdue } from '../utils/date';
+import { borrowService } from './borrowService';
 
 export const materialService = {
   async getAll(filter?: FilterOptions): Promise<Material[]> {
@@ -57,7 +59,7 @@ export const materialService = {
     if (filter?.borrowStatus) {
       const activeBorrowRecords = await db.borrowRecords
         .where('status')
-        .anyOf(['borrowed', 'overdue'])
+        .anyOf(['borrowed', 'overdue', 'reserved'])
         .toArray();
 
       const materialBorrowMap = new Map<string, BorrowRecord>();
@@ -85,7 +87,7 @@ export const materialService = {
     const records = await db.borrowRecords
       .where('materialId')
       .equals(materialId)
-      .filter((r) => r.status === 'borrowed' || r.status === 'overdue')
+      .filter((r) => r.status === 'borrowed' || r.status === 'overdue' || r.status === 'reserved')
       .reverse()
       .sortBy('borrowDate');
 
@@ -134,6 +136,8 @@ export const materialService = {
       .filter((p) => projectIds.includes(p.id))
       .toArray();
 
+    const timelineEvents = await borrowService.getTimeline(id);
+
     return {
       ...material,
       supplier,
@@ -141,6 +145,7 @@ export const materialService = {
       notes,
       borrowRecords,
       projects,
+      timelineEvents,
     };
   },
 
@@ -248,15 +253,6 @@ export const materialService = {
   },
 
   async checkAndUpdateOverdue(): Promise<void> {
-    const borrowedRecords = await db.borrowRecords
-      .where('status')
-      .equals('borrowed')
-      .toArray();
-
-    for (const record of borrowedRecords) {
-      if (isOverdue(record.expectedReturnDate)) {
-        await db.borrowRecords.update(record.id, { status: 'overdue' });
-      }
-    }
+    await borrowService.checkAndUpdateOverdue();
   },
 };

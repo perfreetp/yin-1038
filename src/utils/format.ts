@@ -5,6 +5,7 @@ import type {
   SelectionStatus,
   RelationType,
   ProjectStatus,
+  BorrowActionType,
 } from '../types';
 
 export const formatPrice = (min: number, max: number): string => {
@@ -52,6 +53,7 @@ export const materialStatusLabels: Record<MaterialStatus, string> = {
 };
 
 export const borrowStatusLabels: Record<BorrowStatus, string> = {
+  reserved: '已预约',
   borrowed: '借出中',
   returned: '已归还',
   overdue: '已逾期',
@@ -92,9 +94,26 @@ export const materialStatusColors: Record<MaterialStatus, string> = {
 };
 
 export const borrowStatusColors: Record<BorrowStatus, string> = {
+  reserved: 'bg-purple-100 text-purple-700 border-purple-200',
   borrowed: 'bg-blue-100 text-blue-700 border-blue-200',
   returned: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   overdue: 'bg-orange-100 text-orange-700 border-orange-200',
+};
+
+export const borrowActionTypeLabels: Record<BorrowActionType, string> = {
+  reserve: '预约',
+  borrow: '借出',
+  extend: '续借',
+  return: '归还',
+  cancel_reserve: '取消预约',
+};
+
+export const borrowActionTypeColors: Record<BorrowActionType, string> = {
+  reserve: 'text-purple-400 bg-purple-500/10',
+  borrow: 'text-blue-400 bg-blue-500/10',
+  extend: 'text-cyan-400 bg-cyan-500/10',
+  return: 'text-emerald-400 bg-emerald-500/10',
+  cancel_reserve: 'text-slate-400 bg-slate-500/10',
 };
 
 export const selectionStatusColors: Record<SelectionStatus, string> = {

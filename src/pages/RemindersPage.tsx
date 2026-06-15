@@ -10,9 +10,9 @@ import { useBorrowStore, useMaterialStore } from '../store';
 import type { BorrowRecordWithMaterial } from '../types';
 import { formatDate } from '../utils/format';
 import { getDaysRemaining, getDaysOverdue } from '../utils/format';
-import { AlertTriangle, Bell, Package, Search, ArrowRightLeft, Clock, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Bell, Package, Search, ArrowRightLeft, Clock, RefreshCw, CalendarClock, CheckCircle, XCircle } from 'lucide-react';
 
-type TabType = 'overdue' | 'dueSoon' | 'all';
+type TabType = 'overdue' | 'dueSoon' | 'reservationDue' | 'all';
 
 export function RemindersPage() {
   const navigate = useNavigate();
@@ -63,6 +63,28 @@ export function RemindersPage() {
     }
   };
 
+  const handleConfirmBorrow = async (record: BorrowRecordWithMaterial) => {
+    if (confirm(`确认将 "${record.material.name}" 的预约转为正式借出？`)) {
+      try {
+        await borrowService.confirmBorrow(record.id);
+        await loadData();
+      } catch (error) {
+        console.error('Failed to confirm borrow:', error);
+      }
+    }
+  };
+
+  const handleCancelReservation = async (record: BorrowRecordWithMaterial) => {
+    if (confirm(`确认取消 "${record.material.name}" 的预约？`)) {
+      try {
+        await borrowService.cancelReservation(record.id);
+        await loadData();
+      } catch (error) {
+        console.error('Failed to cancel reservation:', error);
+      }
+    }
+  };
+
   const handleRefresh = () => {
     loadData();
   };
@@ -75,11 +97,17 @@ export function RemindersPage() {
     const daysRemaining = getDaysRemaining(r.expectedReturnDate);
     return daysRemaining >= 0 && daysRemaining <= 3;
   });
+  const reservationDueRecords = activeRecords.filter((r) => {
+    if (r.status !== 'reserved' || !r.reservationExpiryDate) return false;
+    const daysRemaining = getDaysRemaining(r.reservationExpiryDate);
+    return daysRemaining >= 0 && daysRemaining <= 3;
+  });
 
   const tabs = [
     { id: 'overdue' as const, label: '已逾期', count: overdueRecords.length, icon: AlertTriangle, color: 'text-red-400' },
     { id: 'dueSoon' as const, label: '即将到期', count: dueSoonRecords.length, icon: Clock, color: 'text-amber-400' },
-    { id: 'all' as const, label: '全部提醒', count: overdueRecords.length + dueSoonRecords.length, icon: Bell, color: 'text-blue-400' },
+    { id: 'reservationDue' as const, label: '预约到期', count: reservationDueRecords.length, icon: CalendarClock, color: 'text-purple-400' },
+    { id: 'all' as const, label: '全部提醒', count: overdueRecords.length + dueSoonRecords.length + reservationDueRecords.length, icon: Bell, color: 'text-blue-400' },
   ];
 
   const getDisplayRecords = () => {
@@ -88,8 +116,10 @@ export function RemindersPage() {
         return overdueRecords;
       case 'dueSoon':
         return dueSoonRecords;
+      case 'reservationDue':
+        return reservationDueRecords;
       case 'all':
-        return [...overdueRecords, ...dueSoonRecords];
+        return [...overdueRecords, ...dueSoonRecords, ...reservationDueRecords];
       default:
         return [];
     }
@@ -107,6 +137,7 @@ export function RemindersPage() {
 
   const totalOverdue = overdueRecords.length;
   const totalDueSoon = dueSoonRecords.length;
+  const totalReservationDue = reservationDueRecords.length;
 
   return (
     <Layout
@@ -115,7 +146,7 @@ export function RemindersPage() {
       headerTitle="到期提醒"
     >
       <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-5">
             <div className="flex items-center justify-between">
               <div>
@@ -142,11 +173,24 @@ export function RemindersPage() {
             </div>
           </div>
 
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-400 text-sm font-medium">即将到期预约</p>
+                <p className="text-3xl font-bold text-white mt-1">{totalReservationDue}</p>
+                <p className="text-purple-400/70 text-xs mt-1">3天内到期的预约</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                <CalendarClock className="w-6 h-6 text-purple-400" />
+              </div>
+            </div>
+          </div>
+
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-400 text-sm font-medium">待处理总数</p>
-                <p className="text-3xl font-bold text-white mt-1">{totalOverdue + totalDueSoon}</p>
+                <p className="text-3xl font-bold text-white mt-1">{totalOverdue + totalDueSoon + totalReservationDue}</p>
                 <p className="text-blue-400/70 text-xs mt-1">需要关注的借用</p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
@@ -220,6 +264,14 @@ export function RemindersPage() {
                   <p className="text-emerald-400 font-medium mb-1">没有即将到期的借用</p>
                   <p className="text-slate-600 text-sm">近期无需归还的样本</p>
                 </>
+              ) : activeTab === 'reservationDue' ? (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+                    <CalendarClock className="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <p className="text-emerald-400 font-medium mb-1">没有即将到期的预约</p>
+                  <p className="text-slate-600 text-sm">近期无需处理的预约</p>
+                </>
               ) : (
                 <>
                   <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
@@ -239,7 +291,7 @@ export function RemindersPage() {
                   <tr className="border-b border-slate-800">
                     <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">材料信息</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">借用人</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">借出日期</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">日期</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">到期情况</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">状态</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">操作</th>
@@ -248,8 +300,10 @@ export function RemindersPage() {
                 <tbody className="divide-y divide-slate-800">
                   {filteredRecords.map((record) => {
                     const isOverdue = record.status === 'overdue';
+                    const isReserved = record.status === 'reserved';
+                    const bgColor = isOverdue ? 'bg-red-500/5' : isReserved ? 'bg-purple-500/5' : 'bg-amber-500/5';
                     return (
-                      <tr key={record.id} className={`hover:bg-slate-800/30 transition-colors ${isOverdue ? 'bg-red-500/5' : 'bg-amber-500/5'}`}>
+                      <tr key={record.id} className={`hover:bg-slate-800/30 transition-colors ${bgColor}`}>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
                             {record.material.images && record.material.images.length > 0 ? (
@@ -277,17 +331,29 @@ export function RemindersPage() {
                         </td>
                         <td className="px-4 py-4">
                           <div>
-                            <span className="text-slate-400">预计归还: {formatDate(record.expectedReturnDate)}</span>
-                            {isOverdue ? (
-                              <div className="text-xs text-red-400 mt-0.5 font-medium">
-                                <AlertTriangle className="w-3 h-3 inline mr-1" />
-                                已逾期 {getDaysOverdue(record.expectedReturnDate)} 天
-                              </div>
+                            {isReserved && record.reservationExpiryDate ? (
+                              <>
+                                <span className="text-slate-400">预约有效期至: {formatDate(record.reservationExpiryDate)}</span>
+                                <div className="text-xs text-purple-400 mt-0.5 font-medium">
+                                  <CalendarClock className="w-3 h-3 inline mr-1" />
+                                  剩余 {getDaysRemaining(record.reservationExpiryDate)} 天
+                                </div>
+                              </>
                             ) : (
-                              <div className="text-xs text-amber-400 mt-0.5 font-medium">
-                                <Clock className="w-3 h-3 inline mr-1" />
-                                剩余 {getDaysRemaining(record.expectedReturnDate)} 天
-                              </div>
+                              <>
+                                <span className="text-slate-400">预计归还: {formatDate(record.expectedReturnDate)}</span>
+                                {isOverdue ? (
+                                  <div className="text-xs text-red-400 mt-0.5 font-medium">
+                                    <AlertTriangle className="w-3 h-3 inline mr-1" />
+                                    已逾期 {getDaysOverdue(record.expectedReturnDate)} 天
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-amber-400 mt-0.5 font-medium">
+                                    <Clock className="w-3 h-3 inline mr-1" />
+                                    剩余 {getDaysRemaining(record.expectedReturnDate)} 天
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         </td>
@@ -296,23 +362,47 @@ export function RemindersPage() {
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex items-center justify-end gap-2">
-                            {!isOverdue && (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleExtendClick(record)}
-                              >
-                                续借7天
-                              </Button>
+                            {isReserved ? (
+                              <>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleConfirmBorrow(record)}
+                                  className="bg-emerald-600 hover:bg-emerald-500"
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  确认借出
+                                </Button>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => handleCancelReservation(record)}
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" />
+                                  取消预约
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                {!isOverdue && (
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => handleExtendClick(record)}
+                                  >
+                                    续借7天
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleReturnClick(record)}
+                                >
+                                  <ArrowRightLeft className="w-4 h-4 mr-1" />
+                                  归还
+                                </Button>
+                              </>
                             )}
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => handleReturnClick(record)}
-                            >
-                              <ArrowRightLeft className="w-4 h-4 mr-1" />
-                              归还
-                            </Button>
                           </div>
                         </td>
                       </tr>

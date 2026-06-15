@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../Modal';
 import { Button } from '../Button';
 import { Input, TextArea } from '../Input';
+import { BorrowListExport } from '../BorrowListExport';
 import { borrowService } from '../../services/borrowService';
 import { useBorrowStore } from '../../store/useBorrowStore';
 import { addDays, formatDateForInput } from '../../utils/date';
-import type { Material } from '../../types';
-import { CheckSquare, Square, Package } from 'lucide-react';
+import type { Material, BorrowRecordWithMaterial } from '../../types';
+import { CheckSquare, Square, Package, CheckCircle2, FileText } from 'lucide-react';
 
 interface BulkBorrowModalProps {
   isOpen: boolean;
@@ -20,6 +21,9 @@ export function BulkBorrowModal({ isOpen, onClose, materials, onSuccess, default
   const { addBorrowRecords } = useBorrowStore();
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [success, setSuccess] = useState(false);
+  const [createdRecords, setCreatedRecords] = useState<BorrowRecordWithMaterial[]>([]);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const defaultDays = borrowService.getDefaultBorrowDays();
   const [formData, setFormData] = useState({
     borrower: '',
@@ -39,6 +43,9 @@ export function BulkBorrowModal({ isOpen, onClose, materials, onSuccess, default
         expectedReturnDate: formatDateForInput(addDays(new Date(), defaultDays)),
         notes: '',
       });
+      setSuccess(false);
+      setCreatedRecords([]);
+      setExportModalOpen(false);
     }
   }, [isOpen, defaultDays, materials, defaultPurpose]);
 
@@ -75,13 +82,55 @@ export function BulkBorrowModal({ isOpen, onClose, materials, onSuccess, default
       });
       addBorrowRecords(records);
       onSuccess?.();
-      onClose();
+
+      const materialMap = new Map(materials.map((m) => [m.id, m]));
+      const recordsWithMaterial: BorrowRecordWithMaterial[] = records.map((r) => ({
+        ...r,
+        material: materialMap.get(r.materialId)!,
+      }));
+      setCreatedRecords(recordsWithMaterial);
+      setSuccess(true);
     } catch (error) {
       console.error('Failed to create bulk borrow records:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <>
+        <Modal isOpen={isOpen} onClose={onClose} title="批量借出登记" size="xl">
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-100 mb-2">借出成功</h3>
+            <p className="text-slate-400 mb-6">
+              已成功创建 {createdRecords.length} 条借出记录
+            </p>
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={onClose}>
+                关闭
+              </Button>
+              <Button onClick={() => setExportModalOpen(true)}>
+                <FileText className="w-4 h-4 mr-2" />
+                查看借样清单
+              </Button>
+            </div>
+          </div>
+        </Modal>
+        <BorrowListExport
+          isOpen={exportModalOpen}
+          onClose={() => {
+            setExportModalOpen(false);
+            onClose();
+          }}
+          records={createdRecords}
+        />
+      </>
+    );
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="批量借出登记" size="xl">

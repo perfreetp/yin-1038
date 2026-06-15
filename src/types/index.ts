@@ -1,5 +1,6 @@
 export type MaterialStatus = 'normal' | 'discontinued' | 'need_restock' | 'not_recommended';
-export type BorrowStatus = 'borrowed' | 'returned' | 'overdue';
+export type BorrowStatus = 'reserved' | 'borrowed' | 'returned' | 'overdue';
+export type BorrowActionType = 'reserve' | 'borrow' | 'extend' | 'return' | 'cancel_reserve';
 export type ProjectStage = 'concept' | 'scheme' | 'design' | 'construction' | 'completed';
 export type SelectionStatus = 'alternative' | 'selected' | 'proposed' | 'rejected';
 export type RelationType = 'replacement' | 'upgrade' | 'similar';
@@ -44,6 +45,26 @@ export interface BorrowRecord {
   purpose: string;
   status: BorrowStatus;
   notes?: string;
+  reservationExpiryDate?: Date;
+  originalReservationId?: string;
+}
+
+export interface BorrowTimelineEvent {
+  id: string;
+  materialId: string;
+  actionType: BorrowActionType;
+  actor: string;
+  timestamp: Date;
+  borrowRecordId: string;
+  details?: {
+    fromStatus?: BorrowStatus;
+    toStatus?: BorrowStatus;
+    borrowDate?: Date;
+    expectedReturnDate?: Date;
+    actualReturnDate?: Date;
+    purpose?: string;
+    notes?: string;
+  };
 }
 
 export interface Project {
@@ -87,6 +108,7 @@ export interface MaterialWithDetails extends Material {
   notes?: Note[];
   borrowRecords?: BorrowRecord[];
   projects?: Project[];
+  timelineEvents?: BorrowTimelineEvent[];
 }
 
 export interface ProjectWithMaterials extends Project {

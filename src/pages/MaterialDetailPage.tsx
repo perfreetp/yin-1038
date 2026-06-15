@@ -4,6 +4,7 @@ import { Layout } from '../components/Layout';
 import { StatusBadge } from '../components/StatusBadge';
 import { Button } from '../components/Button';
 import { MaterialModal, BorrowModal } from '../components/Modals';
+import { BorrowTimeline } from '../components/BorrowTimeline';
 import { materialService } from '../services/materialService';
 import { borrowService } from '../services/borrowService';
 import type { MaterialWithDetails, Material, Note, Alternative, BorrowRecord } from '../types';
@@ -42,7 +43,7 @@ export function MaterialDetailPage() {
   const navigate = useNavigate();
   const [material, setMaterial] = useState<MaterialWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'basic' | 'alternatives' | 'supplier' | 'notes'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'alternatives' | 'supplier' | 'notes' | 'timeline'>('basic');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
@@ -127,6 +128,7 @@ export function MaterialDetailPage() {
     { id: 'alternatives', label: `替代款 (${material.alternatives?.length || 0})` },
     { id: 'supplier', label: '供应商' },
     { id: 'notes', label: `备注 (${material.notes?.length || 0})` },
+    { id: 'timeline', label: `借用记录 (${material.borrowRecords?.length || 0})` },
   ] as const;
 
   return (
@@ -419,6 +421,10 @@ export function MaterialDetailPage() {
                       <p className="text-sm text-slate-500 text-center py-8">暂无备注</p>
                     )}
                   </div>
+                )}
+
+                {activeTab === 'timeline' && (
+                  <BorrowTimeline materialId={material.id} />
                 )}
               </div>
             </div>
