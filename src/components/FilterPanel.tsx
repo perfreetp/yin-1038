@@ -6,6 +6,9 @@ import { materialStatusLabels } from '../utils/format';
 interface FilterPanelProps {
   materialType: string;
   onMaterialTypeChange: (value: string) => void;
+  projectId: string;
+  onProjectIdChange: (value: string) => void;
+  projects: { id: string; name: string }[];
   status: MaterialStatus | '';
   onStatusChange: (value: MaterialStatus | '') => void;
   supplierId: string;
@@ -22,6 +25,9 @@ interface FilterPanelProps {
 export function FilterPanel({
   materialType,
   onMaterialTypeChange,
+  projectId,
+  onProjectIdChange,
+  projects,
   status,
   onStatusChange,
   supplierId,
@@ -34,7 +40,7 @@ export function FilterPanel({
   onReset,
   className,
 }: FilterPanelProps) {
-  const hasFilters = materialType || status || supplierId || cabinetLocation;
+  const hasFilters = materialType || projectId || status || supplierId || cabinetLocation;
 
   return (
     <div className={cn('bg-slate-800/50 rounded-lg p-4 border border-slate-700', className)}>
@@ -53,7 +59,7 @@ export function FilterPanel({
           </button>
         )}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div>
           <label className="block text-xs text-slate-400 mb-1">材质类型</label>
           <select
@@ -65,6 +71,21 @@ export function FilterPanel({
             {materialTypes.map((type) => (
               <option key={type} value={type}>
                 {type}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-slate-400 mb-1">项目方案</label>
+          <select
+            value={projectId}
+            onChange={(e) => onProjectIdChange(e.target.value)}
+            className="w-full px-2 py-1.5 bg-slate-900 border border-slate-600 rounded text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+          >
+            <option value="">全部</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
               </option>
             ))}
           </select>

@@ -26,7 +26,7 @@ export class MaterialDatabase extends Dexie {
       suppliers: 'id, name',
       borrowRecords: 'id, materialId, borrower, status, borrowDate, expectedReturnDate',
       projects: 'id, name, status, manager',
-      projectMaterials: 'id, projectId, materialId, selectionStatus',
+      projectMaterials: 'id, projectId, materialId, selectionStatus, [projectId+materialId]',
       notes: 'id, materialId, createdAt',
       alternatives: 'id, materialId, alternativeMaterialId',
     });

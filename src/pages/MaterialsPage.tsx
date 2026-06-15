@@ -14,7 +14,7 @@ export function MaterialsPage() {
   const navigate = useNavigate();
   const { materials, setMaterials, suppliers, setSuppliers, filterOptions, setFilterOptions } = useMaterialStore();
   const { setBorrowRecords } = useBorrowStore();
-  const { setProjects } = useProjectStore();
+  const { projects, setProjects } = useProjectStore();
   const [loading, setLoading] = useState(true);
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
   const [borrowModalOpen, setBorrowModalOpen] = useState(false);
@@ -73,6 +73,7 @@ export function MaterialsPage() {
   const handleResetFilters = () => {
     setFilterOptions({
       materialType: '',
+      projectId: '',
       status: '',
       supplierId: '',
       cabinetLocation: '',
@@ -105,6 +106,9 @@ export function MaterialsPage() {
         <FilterPanel
           materialType={filterOptions.materialType || ''}
           onMaterialTypeChange={(v) => setFilterOptions({ materialType: v })}
+          projectId={filterOptions.projectId || ''}
+          onProjectIdChange={(v) => setFilterOptions({ projectId: v })}
+          projects={projects}
           status={(filterOptions.status as MaterialStatus) || ''}
           onStatusChange={(v) => setFilterOptions({ status: v })}
           supplierId={filterOptions.supplierId || ''}
@@ -163,6 +167,7 @@ export function MaterialsPage() {
           setSelectedMaterial(null);
         }}
         material={selectedMaterial}
+        materials={materials}
         onSuccess={loadData}
       />
 

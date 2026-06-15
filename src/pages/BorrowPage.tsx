@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { StatusBadge } from '../components/StatusBadge';
 import { Button } from '../components/Button';
 import { BorrowModal, ReturnModal } from '../components/Modals';
 import { borrowService } from '../services/borrowService';
+import { materialService } from '../services/materialService';
 import { useBorrowStore, useMaterialStore } from '../store';
 import type { BorrowRecordWithMaterial, Material } from '../types';
 import { formatDate } from '../utils/format';
@@ -15,6 +16,7 @@ type TabType = 'borrowed' | 'returned' | 'overdue';
 
 export function BorrowPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { borrowRecords, setBorrowRecords } = useBorrowStore();
   const { materials, setMaterials } = useMaterialStore();
   const [loading, setLoading] = useState(true);
@@ -34,6 +36,19 @@ export function BorrowPage() {
   useEffect(() => {
     loadData();
   }, [activeTab]);
+
+  useEffect(() => {
+    const state = location.state as { materialId?: string } | null;
+    if (state?.materialId) {
+      materialService.getById(state.materialId).then((m) => {
+        if (m) {
+          setSelectedMaterial(m);
+          setBorrowModalOpen(true);
+          navigate(location.pathname, { replace: true, state: {} });
+        }
+      });
+    }
+  }, [location.state]);
 
   const loadData = async () => {
     setLoading(true);
@@ -73,9 +88,11 @@ export function BorrowPage() {
   const filteredRecords = borrowRecords.filter((record) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
+    const materialName = 'material' in record ? record.material.name : '';
+    const materialBrand = 'material' in record ? record.material.brand : '';
     return (
-      record.material.name.toLowerCase().includes(query) ||
-      record.material.brand.toLowerCase().includes(query) ||
+      materialName.toLowerCase().includes(query) ||
+      materialBrand.toLowerCase().includes(query) ||
       record.borrower.toLowerCase().includes(query) ||
       record.purpose?.toLowerCase().includes(query)
     );

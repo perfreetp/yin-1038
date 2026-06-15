@@ -75,10 +75,20 @@ export const projectService = {
     selectionStatus: SelectionStatus = 'alternative',
     version: string = 'v1.0',
   ): Promise<ProjectMaterial> {
-    const existing = await db.projectMaterials
-      .where('[projectId+materialId]')
-      .equals([projectId, materialId])
-      .first();
+    let existing: ProjectMaterial | undefined;
+
+    try {
+      existing = await db.projectMaterials
+        .where('[projectId+materialId]')
+        .equals([projectId, materialId])
+        .first();
+    } catch {
+      existing = await db.projectMaterials
+        .where('projectId')
+        .equals(projectId)
+        .filter((pm) => pm.materialId === materialId)
+        .first();
+    }
 
     if (existing) {
       const updated: ProjectMaterial = {

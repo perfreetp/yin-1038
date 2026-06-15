@@ -33,6 +33,15 @@ export const materialService = {
 
     let materials = await query.toArray();
 
+    if (filter?.projectId) {
+      const projectMaterialRecords = await db.projectMaterials
+        .where('projectId')
+        .equals(filter.projectId)
+        .toArray();
+      const linkedMaterialIds = new Set(projectMaterialRecords.map((pm) => pm.materialId));
+      materials = materials.filter((m) => linkedMaterialIds.has(m.id));
+    }
+
     if (filter?.search) {
       const searchLower = filter.search.toLowerCase();
       materials = materials.filter(
