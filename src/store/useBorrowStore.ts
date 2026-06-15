@@ -7,6 +7,7 @@ interface BorrowState {
   setBorrowRecords: (records: (BorrowRecord | BorrowRecordWithMaterial)[]) => void;
   setLoading: (loading: boolean) => void;
   addBorrowRecord: (record: BorrowRecord) => void;
+  addBorrowRecords: (records: BorrowRecord[]) => void;
   updateBorrowRecord: (record: BorrowRecord) => void;
   deleteBorrowRecord: (id: string) => void;
 }
@@ -18,6 +19,8 @@ export const useBorrowStore = create<BorrowState>((set) => ({
   setLoading: (loading) => set({ loading }),
   addBorrowRecord: (record) =>
     set((state) => ({ borrowRecords: [...state.borrowRecords, record] })),
+  addBorrowRecords: (records) =>
+    set((state) => ({ borrowRecords: [...state.borrowRecords, ...records] })),
   updateBorrowRecord: (record) =>
     set((state) => ({
       borrowRecords: state.borrowRecords.map((r) =>

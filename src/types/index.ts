@@ -109,6 +109,7 @@ export interface FilterOptions {
   supplierId?: string;
   status?: MaterialStatus | '';
   cabinetLocation?: string;
+  borrowStatus?: 'borrowed' | 'overdue' | 'available' | '';
 }
 
 export interface StatisticsData {

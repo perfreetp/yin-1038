@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { StatusBadge } from '../components/StatusBadge';
 import { Button } from '../components/Button';
-import { MaterialModal } from '../components/Modals';
+import { MaterialModal, BorrowModal } from '../components/Modals';
 import { materialService } from '../services/materialService';
 import { borrowService } from '../services/borrowService';
 import type { MaterialWithDetails, Material, Note, Alternative, BorrowRecord } from '../types';
@@ -47,6 +47,7 @@ export function MaterialDetailPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [alternativeModalOpen, setAlternativeModalOpen] = useState(false);
+  const [borrowModalOpen, setBorrowModalOpen] = useState(false);
 
   useEffect(() => {
     if (id) loadMaterial();
@@ -89,7 +90,7 @@ export function MaterialDetailPage() {
 
   const handleBorrow = () => {
     if (!material) return;
-    navigate('/borrow', { state: { materialId: material.id } });
+    setBorrowModalOpen(true);
   };
 
   if (loading) {
@@ -502,6 +503,15 @@ export function MaterialDetailPage() {
         onClose={() => setAlternativeModalOpen(false)}
         currentMaterialId={id || ''}
         onSubmit={handleAddAlternative}
+      />
+
+      <BorrowModal
+        isOpen={borrowModalOpen}
+        onClose={() => setBorrowModalOpen(false)}
+        material={material}
+        onSuccess={() => {
+          loadMaterial();
+        }}
       />
     </Layout>
   );

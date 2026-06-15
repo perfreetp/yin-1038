@@ -3,14 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { StatusBadge } from '../components/StatusBadge';
 import { Button } from '../components/Button';
-import { BorrowModal, ReturnModal } from '../components/Modals';
+import { BorrowModal, BulkBorrowModal, ReturnModal } from '../components/Modals';
 import { borrowService } from '../services/borrowService';
 import { materialService } from '../services/materialService';
 import { useBorrowStore, useMaterialStore } from '../store';
 import type { BorrowRecordWithMaterial, Material } from '../types';
 import { formatDate } from '../utils/format';
 import { getDaysRemaining, getDaysOverdue } from '../utils/format';
-import { ClipboardList, ArrowRightLeft, Package, Search } from 'lucide-react';
+import { ClipboardList, ArrowRightLeft, Package, Search, CheckSquare } from 'lucide-react';
 
 type TabType = 'borrowed' | 'returned' | 'overdue';
 
@@ -23,6 +23,7 @@ export function BorrowPage() {
   const [activeTab, setActiveTab] = useState<TabType>('borrowed');
   const [searchQuery, setSearchQuery] = useState('');
   const [borrowModalOpen, setBorrowModalOpen] = useState(false);
+  const [bulkBorrowModalOpen, setBulkBorrowModalOpen] = useState(false);
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<BorrowRecordWithMaterial | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
@@ -135,6 +136,13 @@ export function BorrowPage() {
               className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
             />
           </div>
+          <Button
+            variant="secondary"
+            onClick={() => setBulkBorrowModalOpen(true)}
+          >
+            <CheckSquare className="w-4 h-4 mr-1" />
+            批量借出
+          </Button>
         </div>
 
         {loading ? (
@@ -260,6 +268,13 @@ export function BorrowPage() {
           setSelectedMaterial(null);
         }}
         material={selectedMaterial}
+        materials={materials}
+        onSuccess={loadData}
+      />
+
+      <BulkBorrowModal
+        isOpen={bulkBorrowModalOpen}
+        onClose={() => setBulkBorrowModalOpen(false)}
         materials={materials}
         onSuccess={loadData}
       />

@@ -42,6 +42,27 @@ export const borrowService = {
     return record;
   },
 
+  async bulkCreate(
+    materialIds: string[],
+    data: Omit<BorrowRecord, 'id' | 'status' | 'materialId'>,
+  ): Promise<BorrowRecord[]> {
+    const status = isOverdue(data.expectedReturnDate) ? 'overdue' : 'borrowed';
+    const records: BorrowRecord[] = materialIds.map((materialId) => ({
+      ...data,
+      materialId,
+      id: generateId(),
+      status,
+    }));
+
+    await db.transaction('rw', db.borrowRecords, async () => {
+      for (const record of records) {
+        await db.borrowRecords.add(record);
+      }
+    });
+
+    return records;
+  },
+
   async returnRecord(id: string, notes?: string): Promise<BorrowRecord | null> {
     const record = await db.borrowRecords.get(id);
     if (!record) return null;

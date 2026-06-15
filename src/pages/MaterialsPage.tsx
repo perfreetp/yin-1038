@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { SearchBar } from '../components/SearchBar';
@@ -7,13 +7,13 @@ import { MaterialCard } from '../components/MaterialCard';
 import { MaterialModal, BorrowModal, ProjectMaterialModal } from '../components/Modals';
 import { materialService } from '../services/materialService';
 import { useMaterialStore, useBorrowStore, useProjectStore } from '../store';
-import type { Material, MaterialStatus } from '../types';
+import type { Material, MaterialStatus, BorrowRecord } from '../types';
 import { Package, Search } from 'lucide-react';
 
 export function MaterialsPage() {
   const navigate = useNavigate();
   const { materials, setMaterials, suppliers, setSuppliers, filterOptions, setFilterOptions } = useMaterialStore();
-  const { setBorrowRecords } = useBorrowStore();
+  const { borrowRecords, setBorrowRecords } = useBorrowStore();
   const { projects, setProjects } = useProjectStore();
   const [loading, setLoading] = useState(true);
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
@@ -77,9 +77,24 @@ export function MaterialsPage() {
       status: '',
       supplierId: '',
       cabinetLocation: '',
+      borrowStatus: '',
     });
     setSearchQuery('');
   };
+
+  const currentBorrowMap = useMemo(() => {
+    const map = new Map<string, BorrowRecord>();
+    const activeRecords = borrowRecords.filter(
+      (r) => r.status === 'borrowed' || r.status === 'overdue',
+    );
+    for (const record of activeRecords) {
+      const existing = map.get(record.materialId);
+      if (!existing || record.borrowDate > existing.borrowDate) {
+        map.set(record.materialId, record);
+      }
+    }
+    return map;
+  }, [borrowRecords]);
 
   const materialTypes = materialService.getMaterialTypes();
   const cabinetLocations = materialService.getCabinetLocations();
@@ -115,6 +130,8 @@ export function MaterialsPage() {
           onSupplierIdChange={(v) => setFilterOptions({ supplierId: v })}
           cabinetLocation={filterOptions.cabinetLocation || ''}
           onCabinetLocationChange={(v) => setFilterOptions({ cabinetLocation: v })}
+          borrowStatus={(filterOptions.borrowStatus as 'borrowed' | 'overdue' | 'available' | '') || ''}
+          onBorrowStatusChange={(v) => setFilterOptions({ borrowStatus: v })}
           materialTypes={materialTypes}
           suppliers={suppliers}
           cabinetLocations={cabinetLocations}
@@ -146,6 +163,7 @@ export function MaterialsPage() {
               <MaterialCard
                 key={material.id}
                 material={material}
+                currentBorrow={currentBorrowMap.get(material.id)}
                 onBorrow={handleBorrowClick}
                 onProject={handleProjectClick}
               />

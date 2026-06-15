@@ -15,6 +15,8 @@ interface FilterPanelProps {
   onSupplierIdChange: (value: string) => void;
   cabinetLocation: string;
   onCabinetLocationChange: (value: string) => void;
+  borrowStatus: 'borrowed' | 'overdue' | 'available' | '';
+  onBorrowStatusChange: (value: 'borrowed' | 'overdue' | 'available' | '') => void;
   materialTypes: string[];
   suppliers: { id: string; name: string }[];
   cabinetLocations: string[];
@@ -34,13 +36,15 @@ export function FilterPanel({
   onSupplierIdChange,
   cabinetLocation,
   onCabinetLocationChange,
+  borrowStatus,
+  onBorrowStatusChange,
   materialTypes,
   suppliers,
   cabinetLocations,
   onReset,
   className,
 }: FilterPanelProps) {
-  const hasFilters = materialType || projectId || status || supplierId || cabinetLocation;
+  const hasFilters = materialType || projectId || status || supplierId || cabinetLocation || borrowStatus;
 
   return (
     <div className={cn('bg-slate-800/50 rounded-lg p-4 border border-slate-700', className)}>
@@ -59,7 +63,7 @@ export function FilterPanel({
           </button>
         )}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div>
           <label className="block text-xs text-slate-400 mb-1">材质类型</label>
           <select
@@ -133,6 +137,19 @@ export function FilterPanel({
                 {loc}
               </option>
             ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-slate-400 mb-1">借出状态</label>
+          <select
+            value={borrowStatus}
+            onChange={(e) => onBorrowStatusChange(e.target.value as 'borrowed' | 'overdue' | 'available' | '')}
+            className="w-full px-2 py-1.5 bg-slate-900 border border-slate-600 rounded text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+          >
+            <option value="">全部</option>
+            <option value="borrowed">借出中</option>
+            <option value="overdue">已逾期</option>
+            <option value="available">可借用</option>
           </select>
         </div>
       </div>

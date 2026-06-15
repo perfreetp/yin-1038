@@ -1,19 +1,20 @@
-import { Eye, Edit, ArrowRightLeft, FolderKanban } from 'lucide-react';
+import { Eye, ArrowRightLeft, FolderKanban, User, CalendarClock, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
-import type { Material } from '../types';
+import type { Material, BorrowRecord } from '../types';
 import { StatusBadge } from './StatusBadge';
-import { formatPrice } from '../utils/format';
+import { formatPrice, formatDate } from '../utils/format';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../store/useUIStore';
 
 interface MaterialCardProps {
   material: Material;
   className?: string;
+  currentBorrow?: BorrowRecord | null;
   onBorrow?: (material: Material) => void;
   onProject?: (material: Material) => void;
 }
 
-export function MaterialCard({ material, className, onBorrow, onProject }: MaterialCardProps) {
+export function MaterialCard({ material, className, currentBorrow, onBorrow, onProject }: MaterialCardProps) {
   const navigate = useNavigate();
   const { openModal } = useUIStore();
 
@@ -21,14 +22,55 @@ export function MaterialCard({ material, className, onBorrow, onProject }: Mater
     navigate(`/materials/${material.id}`);
   };
 
+  const isOverdue = currentBorrow?.status === 'overdue';
+  const isBorrowed = currentBorrow?.status === 'borrowed' || isOverdue;
+
+  const borderClass = isOverdue
+    ? 'border-red-500/60 hover:border-red-500 hover:shadow-red-500/10'
+    : isBorrowed
+    ? 'border-blue-500/60 hover:border-blue-500 hover:shadow-blue-500/10'
+    : 'border-slate-700 hover:border-blue-500/50 hover:shadow-blue-500/10';
+
   return (
     <div
       className={cn(
-        'bg-slate-800 rounded-lg border border-slate-700 overflow-hidden transition-all duration-200 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-0.5 cursor-pointer',
+        'bg-slate-800 rounded-lg border overflow-hidden transition-all duration-200 hover:-translate-y-0.5 cursor-pointer',
+        borderClass,
         className,
       )}
       onClick={handleViewDetail}
     >
+      {currentBorrow && (
+        <div
+          className={cn(
+            'px-3 py-1.5 flex items-center justify-between text-xs border-b',
+            isOverdue
+              ? 'bg-red-500/10 border-red-500/30'
+              : 'bg-blue-500/10 border-blue-500/30',
+          )}
+        >
+          <div className="flex items-center gap-1.5">
+            {isOverdue ? (
+              <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+            ) : (
+              <CalendarClock className="w-3.5 h-3.5 text-blue-400" />
+            )}
+            <span className={isOverdue ? 'text-red-400 font-medium' : 'text-blue-400 font-medium'}>
+              {isOverdue ? '已逾期' : '借出中'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-slate-400">
+            <span className="flex items-center gap-1">
+              <User className="w-3 h-3" />
+              {currentBorrow.borrower}
+            </span>
+            <span className="flex items-center gap-1">
+              <CalendarClock className="w-3 h-3" />
+              {formatDate(currentBorrow.expectedReturnDate)}
+            </span>
+          </div>
+        </div>
+      )}
       <div className="flex">
         <div className="w-28 h-28 flex-shrink-0 bg-slate-900">
           {material.images.length > 0 ? (

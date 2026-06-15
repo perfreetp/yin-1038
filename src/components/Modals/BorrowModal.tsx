@@ -14,9 +14,11 @@ interface BorrowModalProps {
   material: Material | null;
   materials?: Material[];
   onSuccess?: () => void;
+  defaultPurpose?: string;
+  defaultBorrower?: string;
 }
 
-export function BorrowModal({ isOpen, onClose, material, materials = [], onSuccess }: BorrowModalProps) {
+export function BorrowModal({ isOpen, onClose, material, materials = [], onSuccess, defaultPurpose, defaultBorrower }: BorrowModalProps) {
   const { addBorrowRecord } = useBorrowStore();
   const [loading, setLoading] = useState(false);
   const [selectedMaterialId, setSelectedMaterialId] = useState<string>('');
@@ -33,14 +35,14 @@ export function BorrowModal({ isOpen, onClose, material, materials = [], onSucce
     if (isOpen) {
       setSelectedMaterialId(material?.id || '');
       setFormData({
-        borrower: '',
-        purpose: '',
+        borrower: defaultBorrower || '',
+        purpose: defaultPurpose || '',
         borrowDate: formatDateForInput(new Date()),
         expectedReturnDate: formatDateForInput(addDays(new Date(), defaultDays)),
         notes: '',
       });
     }
-  }, [isOpen, defaultDays, material]);
+  }, [isOpen, defaultDays, material, defaultPurpose, defaultBorrower]);
 
   const getSelectedMaterial = (): Material | null => {
     if (material) return material;
@@ -146,8 +148,7 @@ export function BorrowModal({ isOpen, onClose, material, materials = [], onSucce
             label="借出用途"
             value={formData.purpose}
             onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-            placeholder="如：项目会议展示"
-            required
+            placeholder="如：项目会议展示（可选）"
           />
         </div>
         <TextArea

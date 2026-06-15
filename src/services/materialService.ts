@@ -6,6 +6,7 @@ import type {
   Alternative,
   FilterOptions,
   MaterialWithDetails,
+  BorrowRecord,
 } from '../types';
 import { generateId } from '../utils/file';
 import { isOverdue } from '../utils/date';
@@ -53,7 +54,42 @@ export const materialService = {
       );
     }
 
+    if (filter?.borrowStatus) {
+      const activeBorrowRecords = await db.borrowRecords
+        .where('status')
+        .anyOf(['borrowed', 'overdue'])
+        .toArray();
+
+      const materialBorrowMap = new Map<string, BorrowRecord>();
+      for (const record of activeBorrowRecords) {
+        const existing = materialBorrowMap.get(record.materialId);
+        if (!existing || record.borrowDate > existing.borrowDate) {
+          materialBorrowMap.set(record.materialId, record);
+        }
+      }
+
+      if (filter.borrowStatus === 'available') {
+        materials = materials.filter((m) => !materialBorrowMap.has(m.id));
+      } else {
+        materials = materials.filter((m) => {
+          const record = materialBorrowMap.get(m.id);
+          return record?.status === filter.borrowStatus;
+        });
+      }
+    }
+
     return materials.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  },
+
+  async getCurrentBorrow(materialId: string): Promise<BorrowRecord | null> {
+    const records = await db.borrowRecords
+      .where('materialId')
+      .equals(materialId)
+      .filter((r) => r.status === 'borrowed' || r.status === 'overdue')
+      .reverse()
+      .sortBy('borrowDate');
+
+    return records.length > 0 ? records[0] : null;
   },
 
   async getById(id: string): Promise<Material | undefined> {

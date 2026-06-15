@@ -3,12 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { StatusBadge } from '../components/StatusBadge';
 import { Button } from '../components/Button';
-import { ProjectMaterialModal } from '../components/Modals';
+import { ProjectMaterialModal, BorrowModal } from '../components/Modals';
 import { projectService } from '../services/projectService';
-import { useProjectStore, useMaterialStore } from '../store';
+import { useProjectStore, useMaterialStore, useBorrowStore } from '../store';
 import type { ProjectWithMaterials, SelectionStatus, Material } from '../types';
 import { formatDate, formatPrice } from '../utils/format';
-import { ArrowLeft, FolderKanban, Download, Plus, Trash2, Package, User, Calendar, FileText } from 'lucide-react';
+import { ArrowLeft, FolderKanban, Download, Plus, Trash2, Package, User, Calendar, FileText, ArrowRightLeft } from 'lucide-react';
 
 const selectionStatusLabels: Record<SelectionStatus, string> = {
   selected: '已选定',
@@ -29,9 +29,11 @@ export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { setProjects } = useProjectStore();
   const { materials, setMaterials } = useMaterialStore();
+  const { setBorrowRecords } = useBorrowStore();
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<ProjectWithMaterials | null>(null);
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
+  const [borrowModalOpen, setBorrowModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
 
   useEffect(() => {
@@ -93,6 +95,11 @@ export function ProjectDetailPage() {
   const handleAddMaterial = () => {
     setSelectedMaterial(null);
     setMaterialModalOpen(true);
+  };
+
+  const handleBorrowClick = (material: Material) => {
+    setSelectedMaterial(material);
+    setBorrowModalOpen(true);
   };
 
   if (loading) {
@@ -293,6 +300,13 @@ export function ProjectDetailPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                onClick={() => handleBorrowClick(pm.material)}
+                              >
+                                <ArrowRightLeft className="w-4 h-4 text-emerald-400" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleRemoveMaterial(pm.id, pm.material.name)}
                               >
                                 <Trash2 className="w-4 h-4 text-red-400" />
@@ -318,6 +332,17 @@ export function ProjectDetailPage() {
         material={selectedMaterial}
         materials={materials}
         projectId={project.id}
+        onSuccess={loadData}
+      />
+
+      <BorrowModal
+        isOpen={borrowModalOpen}
+        onClose={() => {
+          setBorrowModalOpen(false);
+          setSelectedMaterial(null);
+        }}
+        material={selectedMaterial}
+        defaultPurpose={project?.name || ''}
         onSuccess={loadData}
       />
     </Layout>
